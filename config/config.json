@@ -1,0 +1,12 @@
+{
+    "decrypted_password_jay_user": "jay.patel",
+    "password_hashing_flag": "False",
+    "loader_configurations": {
+        "time": 1.5,
+        "color": "white",
+        "index": 5
+    },
+    "coming_soon_image_configurations": {
+        "width": 520
+    }
+}
