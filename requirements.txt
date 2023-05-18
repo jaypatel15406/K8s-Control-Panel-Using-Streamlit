@@ -1,0 +1,5 @@
+streamlit==1.22.0
+hydralit-components==1.0.10
+kubernetes==26.1.0
+streamlit-authenticator==0.2.2
+streamlit-option-menu==0.3.4
