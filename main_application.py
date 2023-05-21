@@ -1,6 +1,4 @@
 #! For Running App: python -m streamlit run .\main_application.py
-#  OR python -m streamlit run '.\Streamlit Applications\Kubernetes Control Application\main_application.py'
-
 '''
 /* CHANGE HISTORY
 
@@ -29,7 +27,7 @@ from scripts.deployment_page import deployment_page
 from scripts.pod_page import pod_page
 
 #* Set Page width to 'Wide'
-st.set_page_config(layout= "wide", menu_items= {})
+st.set_page_config(layout= "wide", menu_items= {}, page_icon= "media/K8s Control Panel.png")
 
 #* Hide 'Streamlit' Watermark
 with open("template/watermark_removal/watermark_removal_script.html", "r") as watermark_removal_file: hide_st_style= watermark_removal_file.read()
