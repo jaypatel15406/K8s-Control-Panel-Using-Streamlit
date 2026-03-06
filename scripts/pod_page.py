@@ -12,23 +12,6 @@ Features:
     - Resource update operations (memory and CPU - coming soon)
     - Real-time operation status feedback
     - Comprehensive error handling and logging
-    - "Coming Soon" placeholder for future features
-
-Architecture:
-    The module follows a three-tier structure:
-    1. UI Layer: Streamlit widgets for user interaction
-    2. Business Logic: Pod operation execution
-    3. Data Layer: Kubernetes Core V1 API interactions
-
-Functions:
-    choose_pod: Display pod selection dropdown
-    perform_pod_operation: Execute pod operations (delete, update resources)
-    pod_page: Main page orchestrator for pod operations
-
-Note:
-    - Pod deletion is immediately effective and irreversible
-    - Resource update functionality is under development
-    - All operations are logged for audit purposes
 """
 
 from __future__ import annotations
@@ -203,17 +186,6 @@ def pod_page(v1: CoreV1Api | None, a1: AppsV1Api | None, k8s_error: str = "") ->
     UI for namespace selection, pod selection, operation type selection, and
     executes pod operations based on user input.
 
-    The page workflow:
-        1. Select namespace from available cluster namespaces
-        2. Choose one or more pods from the selected namespace
-        3. Select operation type (varies based on pod count)
-        4. Execute operation
-        5. Display success/error feedback or "Coming Soon" placeholder
-
-    Operation availability:
-        - Single pod selected: Delete Pod, Update Memory and CPU
-        - Multiple pods selected: Delete Pod only
-
     Args:
         v1: Kubernetes Core V1 API client instance for pod operations.
         a1: Kubernetes Apps V1 API client instance (reserved for future use).
@@ -227,7 +199,13 @@ def pod_page(v1: CoreV1Api | None, a1: AppsV1Api | None, k8s_error: str = "") ->
 
         # Show warning if Kubernetes is not configured
         if k8s_error:
-            st.warning(f"⚠️ {k8s_error}")
+            st.warning(f"Kubeconfig Error: {k8s_error}")
+
+        # Page title
+        st.markdown("### Pod Operations")
+        st.markdown("Manage your Kubernetes pods with simple operations.")
+
+        st.divider()
 
         # Initialization of 'Column Partition' for selecting 'Namespace' and 'Pod'
         namespace_col, pod_col, operation_col = st.columns(3)
@@ -241,7 +219,6 @@ def pod_page(v1: CoreV1Api | None, a1: AppsV1Api | None, k8s_error: str = "") ->
         selected_pod = choose_pod(v1, selected_namespace, pod_col, k8s_error)
 
         # Enable/Disable the Dropdown option based on 'selected_pod'
-        # If user hasn't selected any pod then they will not be able to perform operations
         operation_flag = True if len(selected_pod) == 0 else False
 
         # Choose Operation based on the 'Number of Pods' Selected
@@ -251,9 +228,9 @@ def pod_page(v1: CoreV1Api | None, a1: AppsV1Api | None, k8s_error: str = "") ->
             else ["Delete Pod"]
         )
 
-        # Choose Operations whether he/she want to perform any of the given operations
+        # Choose Operations
         selected_pod_operations = operation_col.selectbox(
-            "Choose Pod Operation 👇", operation_lst, disabled=operation_flag
+            "Choose Pod Operation", operation_lst, disabled=operation_flag
         )
 
         # Made Column Partition to make a button at center location
@@ -273,11 +250,11 @@ def pod_page(v1: CoreV1Api | None, a1: AppsV1Api | None, k8s_error: str = "") ->
                 _, center_col, _ = st.columns(3)
                 center_col.image(
                     image,
-                    caption="Hold on tight, I am working on this 😮",
+                    caption="Hold on tight, I am working on this",
                     width=coming_soon_image_width,
                 )
             else:
-                st.info("🚧 Feature under development - Coming Soon!")
+                st.info("Feature under development - Coming Soon")
 
         else:
             # Perform Pod Operation based on the Selection
@@ -292,6 +269,7 @@ def pod_page(v1: CoreV1Api | None, a1: AppsV1Api | None, k8s_error: str = "") ->
                     selected_pod_operations,
                 ),
                 disabled=operation_flag,
+                type="primary",
             )
 
             # If 'Pod Operated Successfully' then return 'Success' Message else return 'Error'

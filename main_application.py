@@ -48,12 +48,20 @@ from yaml.loader import SafeLoader
 # Import scripted modules
 from scripts.deployment_page import deployment_page
 from scripts.pod_page import pod_page
+from scripts.documentation_page import render_documentation_page
 
 # Import common components
 from common.logging_config import setup_logging
+from common.footer_component import render_footer
+from common.k8s_tips import render_tips_section
 
 # Set Page width to 'Wide'
-st.set_page_config(layout="wide", menu_items={}, page_icon="media/K8s Control Panel.png")
+st.set_page_config(
+    layout="wide",
+    menu_items={},
+    page_icon="media/K8s_Control_Panel_Favicon.svg",
+    initial_sidebar_state="expanded"
+)
 
 # Hide 'Streamlit' Watermark
 with open("template/watermark_removal/watermark_removal_script.html", "r") as (
@@ -72,55 +80,20 @@ kube_config_path = f"{config_path}/k8sconfig.txt"
 def load_configuration() -> dict[str, Any] | None:
     """Load and validate application configuration from JSON file.
 
-    Reads the application configuration file and returns it as a dictionary.
-    Returns None if configuration file is missing or invalid.
-
     Returns:
         Dictionary containing application configuration settings, or None if
         configuration cannot be loaded.
     """
     try:
         if not os.path.exists(app_config_path):
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Configuration file not found: {app_config_path}")
             return None
 
         with open(app_config_path, "r", encoding="utf-8") as app_conf_file:
             app_conf_json_str = app_conf_file.read()
             app_config_dict = json.loads(app_conf_json_str)
         return app_config_dict
-    except json.JSONDecodeError as e:
-        logger = logging.getLogger(__name__)
-        logger.error(f"Invalid JSON in config file: {e}")
+    except (json.JSONDecodeError, Exception):
         return None
-    except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error loading configuration: {e}")
-        return None
-
-
-def initialize_logging(app_config_dict: dict[str, Any] | None) -> None:
-    """Initialize logging configuration from application settings.
-
-    Sets up logging based on the logging_configurations section in config.json.
-    Uses default settings if configuration is missing or None.
-
-    Args:
-        app_config_dict: Application configuration dictionary containing
-                        logging_configurations section, or None.
-    """
-    if app_config_dict is None:
-        setup_logging(level="INFO", log_file="logs/app.log")
-        return
-
-    logging_config = app_config_dict.get("logging_configurations", {})
-    setup_logging(
-        level=logging_config.get("level", "INFO"),
-        log_file=logging_config.get("file", "logs/app.log"),
-        max_bytes=logging_config.get("max_bytes", 5 * 1024 * 1024),
-        backup_count=logging_config.get("backup_count", 3),
-        log_format=logging_config.get("format"),
-    )
 
 
 def load_kubernetes_clients() -> tuple[client.CoreV1Api | None, client.AppsV1Api | None, str]:
@@ -136,7 +109,7 @@ def load_kubernetes_clients() -> tuple[client.CoreV1Api | None, client.AppsV1Api
     """
     try:
         if not os.path.exists(kube_config_path):
-            return None, None, f"Kubeconfig file not found: {kube_config_path}"
+            return None, None, "Kubeconfig file not found"
 
         config.load_kube_config(kube_config_path)
         v1 = client.CoreV1Api()
@@ -156,68 +129,51 @@ def load_credentials() -> dict[str, Any] | None:
     """
     try:
         if not os.path.exists(credential_config_path):
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Credential file not found: {credential_config_path}")
             return None
 
         with open(credential_config_path) as credential_conf_file:
             credential_config_dict = yaml.load(credential_conf_file, Loader=SafeLoader)
         return credential_config_dict
-    except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error loading credentials: {e}")
+    except Exception:
         return None
 
 
-def user_login(authenticator: stauth.Authenticate) -> tuple[str | None, bool | None, str | None]:
-    """Authenticate user before allowing Kubernetes cluster operations.
+def render_login_page(authenticator: stauth.Authenticate) -> None:
+    """Render centered login page for first-time users.
 
-    Handles user authentication using streamlit-authenticator.
+    Displays a clean, centered login form with application branding.
+    Only shown when user is not authenticated.
 
     Args:
-        authenticator: Streamlit authenticator instance configured with
-                      user credentials.
-
-    Returns:
-        Tuple containing (name, authentication_status, username):
-        - name: User's display name if authenticated, None otherwise
-        - authentication_status: True (success), False (failed), None (not attempted)
-        - username: Authenticated username if successful, None otherwise
+        authenticator: Streamlit authenticator instance.
     """
-    try:
-        logger = logging.getLogger(__name__)
-        logger.info("streamlit : K8S Control Panel : user_login : Execution Start")
+    # Application title with emoji
+    st.markdown(
+        "<h1 style='text-align: center; margin-bottom: 0.5rem;'>K8s Control Panel 🕵️‍♀️</h1>",
+        unsafe_allow_html=True,
+    )
 
-        # Authenticate User using keyword argument for location (streamlit-authenticator >= 0.4.0)
+    # Subtitle with white color for better contrast on dark backgrounds
+    st.markdown(
+        "<p style='text-align: center; color: #4a5568; font-size: 1.1em; margin-bottom: 0.5rem; font-weight: 500;'>Manage your Kubernetes cluster with ease</p>",
+        unsafe_allow_html=True,
+    )
+
+    # Create centered columns for login widget
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # Render login widget
         authenticator.login(location="main")
 
-        # Get authentication status from session state
-        name = st.session_state.get("name")
-        authentication_status = st.session_state.get("authentication_status")
-        username = st.session_state.get("username")
-
-        logger.info(f"streamlit : K8S Control Panel : user_login : name : {name}")
-        logger.info(
-            f"streamlit : K8S Control Panel : user_login : authentication_status : {authentication_status}"
-        )
-        logger.info(f"streamlit : K8S Control Panel : username : {username}")
-        logger.info("streamlit : K8S Control Panel : user_login : Execution End")
-
-        return name, authentication_status, username
-
-    except Exception as exe:
-        logger = logging.getLogger(__name__)
-        logger.error(
-            f"streamlit : K8S Control Panel : user_login : Exception : {str(exe)}"
-        )
-        logger.error(
-            f"streamlit : K8S Control Panel : user_login : traceback : {traceback.format_exc()}"
-        )
-        st.exception(exe)
-        return None, None, None
+        # Check authentication status
+        auth_status = st.session_state.get("authentication_status")
+        if auth_status is False:
+            st.error("Username/Password is Incorrect")
+        elif auth_status is None:
+            st.info("🔐 Please enter your credentials to access the control panel")
 
 
-def main_page(v1: client.CoreV1Api | None, a1: client.AppsV1Api | None, k8s_error: str) -> None:
+def render_main_interface(v1: client.CoreV1Api | None, a1: client.AppsV1Api | None, k8s_error: str) -> None:
     """Display the main application interface after successful authentication.
 
     Renders the main page with navigation tabs for Deployment Operations and
@@ -232,29 +188,72 @@ def main_page(v1: client.CoreV1Api | None, a1: client.AppsV1Api | None, k8s_erro
         logger = logging.getLogger(__name__)
         logger.info("streamlit : K8S Control Panel : main_page : Execution Start")
 
-        # Show warning if Kubernetes is not configured
+        # Sidebar with user info and navigation
+        with st.sidebar:
+            # User profile section with emoji
+            st.markdown("### 👤 User Profile")
+            user_name = st.session_state.get("name", "User")
+            user_email = st.session_state.get("username", "")
+            st.write(f"**Name:** {user_name}")
+            st.write(f"**Email:** {user_email}")
+            st.divider()
+
+            # Logout button
+            st.markdown("### 🔒 Session")
+            if st.button("Logout", use_container_width=True, type="secondary"):
+                # Clear authentication session state
+                st.session_state.authentication_status = False
+                st.session_state.name = None
+                st.session_state.username = None
+                st.rerun()
+
+            st.divider()
+
+            # Quick Tips & Tricks (random on each reload)
+            render_tips_section()
+
+        # Show Kubernetes configuration warning if needed
         if k8s_error:
-            st.warning(f"⚠️ {k8s_error}")
+            st.warning(f"Kubeconfig Error: {k8s_error}")
             st.info(
                 "Please configure your Kubernetes cluster by adding the kubeconfig file to "
                 f"`{kube_config_path}`. Until then, dropdown menus will be empty."
             )
 
+        # Application title with centered alignment and emoji
+        st.markdown(
+            "<h1 style='text-align: center; margin-bottom: 2rem;'>K8s Control Panel Dashboard 🕵️‍♀️</h1>",
+            unsafe_allow_html=True,
+        )
+
         # Navigation menu for different operation tabs
         selected_tab = option_menu(
             None,
-            ["Deployment Operations", "Pod Operations"],
-            icons=["hdd-stack", "window-stack"],
+            ["Deployment Operations", "Pod Operations", "Documentation"],
+            icons=["hdd-stack", "window-stack", "book"],
             menu_icon="cast",
             default_index=0,
             orientation="horizontal",
         )
 
-        # Open Pages based on the 'on-click' method
+        # Display appropriate page based on selection
         if selected_tab == "Deployment Operations":
-            deployment_page(v1=v1, a1=a1, k8s_error=k8s_error)
-        if selected_tab == "Pod Operations":
-            pod_page(v1=v1, a1=a1, k8s_error=k8s_error)
+            deployment_page(
+                v1=v1,
+                a1=a1,
+                k8s_error=k8s_error,
+            )
+        elif selected_tab == "Pod Operations":
+            pod_page(
+                v1=v1,
+                a1=a1,
+                k8s_error=k8s_error,
+            )
+        elif selected_tab == "Documentation":
+            render_documentation_page()
+
+        # Render footer on ALL pages
+        render_footer()
 
         logger.info("streamlit : K8S Control Panel : main_page : Execution End")
 
@@ -272,27 +271,20 @@ def main_page(v1: client.CoreV1Api | None, a1: client.AppsV1Api | None, k8s_erro
 def main() -> None:
     """Main entry point for the K8s Control Panel application.
 
-    Orchestrates the application flow:
+    Orchestrates the complete application flow:
     1. Load configuration and initialize logging
-    2. Load Kubernetes API clients (with graceful error handling)
+    2. Initialize Kubernetes clients
     3. Load credentials and authenticate user
-    4. Display main interface or authentication prompts
-
-    The function handles three authentication states:
-    - Successful login: Proceed to main page
-    - Failed login: Display error message
-    - No attempt: Display login prompt
+    4. Render login page OR main interface based on auth status
     """
     try:
         logger = logging.getLogger(__name__)
         logger.info("streamlit : K8S Control Panel : main : Execution Start")
 
-        # Load configuration and initialize logging
-        app_config_dict = load_configuration()
-        initialize_logging(app_config_dict)
-        logger.info("Configuration loaded successfully")
+        # Initialize logging
+        setup_logging(level="INFO", log_file="logs/app.log")
 
-        # Load Kubernetes clients (may fail gracefully)
+        # Load Kubernetes clients
         v1, a1, k8s_error = load_kubernetes_clients()
         if k8s_error:
             logger.warning(f"Kubernetes configuration failed: {k8s_error}")
@@ -314,8 +306,7 @@ def main() -> None:
             logger.info("streamlit : K8S Control Panel : main : Execution End")
             return
 
-        # Instantiate authenticator (updated for streamlit-authenticator >= 0.4.0)
-        # Note: preauthorized parameter moved to register_user() in v0.4.0
+        # Instantiate authenticator (streamlit-authenticator >= 0.4.0)
         authenticator = stauth.Authenticate(
             credential_config_dict["credentials"],
             credential_config_dict["cookie"]["name"],
@@ -323,15 +314,15 @@ def main() -> None:
             credential_config_dict["cookie"]["expiry_days"],
         )
 
-        # Authenticate user
-        name, authentication_status, username = user_login(authenticator)
+        # Check if user is already authenticated
+        auth_status = st.session_state.get("authentication_status")
 
-        if authentication_status:
-            main_page(v1=v1, a1=a1, k8s_error=k8s_error)
-        elif authentication_status is False:
-            st.error("Username/Password is Incorrect")
-        elif authentication_status is None:
-            st.warning("Please enter your 'Username' and 'Password'")
+        if auth_status:
+            # User is authenticated - show main interface ONLY
+            render_main_interface(v1=v1, a1=a1, k8s_error=k8s_error)
+        else:
+            # User not authenticated - show ONLY login page
+            render_login_page(authenticator)
 
         logger.info("streamlit : K8S Control Panel : main : Execution End")
 
@@ -345,9 +336,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    # Title of the Application
-    st.markdown(
-        "<h1 style='text-align: center;'>Welcome to K8s Control Panel 🕵️‍♀️</h1>",
-        unsafe_allow_html=True,
-    )
     main()

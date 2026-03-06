@@ -12,28 +12,12 @@ Features:
     - Scale down operations (decrease replica count to zero)
     - Real-time operation status feedback
     - Comprehensive error handling and logging
-
-Architecture:
-    The module follows a three-tier structure:
-    1. UI Layer: Streamlit widgets for user interaction
-    2. Business Logic: Deployment scaling operations
-    3. Data Layer: Kubernetes Apps V1 API interactions
-
-Functions:
-    choose_deployment: Display deployment selection dropdown
-    deployment_scaling: Execute scaling operations on selected deployments
-    deployment_page: Main page orchestrator for deployment operations
-
-Note:
-    This module requires authenticated access and valid Kubernetes cluster
-    configuration. All operations are logged for audit purposes.
 """
 
 from __future__ import annotations
 
 import logging
 import traceback
-from typing import Any
 
 import streamlit as st
 from kubernetes.client import AppsV1Api, CoreV1Api
@@ -74,7 +58,7 @@ def choose_deployment(
 
         # If Kubernetes is not configured, return empty list
         if a1 is None or k8s_error:
-            deployment_col.info("⚠️ Kubernetes not configured - no deployments available")
+            deployment_col.info("Kubernetes not configured - no deployments available")
             return []
 
         # List all the Deployments in its respective 'namespace'
@@ -182,14 +166,6 @@ def deployment_page(
     type selection, and replica count configuration. Executes scaling
     operations based on user input.
 
-    The page workflow:
-        1. Select namespace from available cluster namespaces
-        2. Choose one or more deployments from the selected namespace
-        3. Select operation type (Scale Up or Scale Down)
-        4. Configure replica count (for scale up operations)
-        5. Execute scaling operation
-        6. Display success/error feedback
-
     Args:
         v1: Kubernetes Core V1 API client instance (used for namespace listing).
         a1: Kubernetes Apps V1 API client instance (used for deployment operations).
@@ -203,13 +179,18 @@ def deployment_page(
 
         # Show warning if Kubernetes is not configured
         if k8s_error:
-            st.warning(f"⚠️ {k8s_error}")
+            st.warning(f"Kubeconfig Error: {k8s_error}")
+
+        # Page title
+        st.markdown("### Deployment Operations")
+        st.markdown("Scale your Kubernetes deployments up or down with ease.")
+
+        st.divider()
 
         # Initialization of 'Column Partition' for selecting 'Namespace' and 'Deployment'
         namespace_col, deployment_col, operation_col = st.columns(3)
 
         # Select 'Namespace' from all the available options
-        # If v1 is None, this will show empty dropdown with warning
         selected_namespace = common_obj.choose_namespace(
             v1, namespace_col, key="deployment", k8s_error=k8s_error
         )
@@ -220,24 +201,22 @@ def deployment_page(
         )
 
         # Enable/Disable the Dropdown option based on 'selected_deployments'
-        # If user hasn't selected any deployment then they will not be able to 'Scale'
         operation_flag = True if len(selected_deployments) == 0 else False
 
-        # Choose Operations whether he/she want to 'Scale Up/ Scale Down' the 'Deployments'
+        # Choose Operations
         selected_operations = operation_col.selectbox(
-            "Choose Deployment Operation 👇",
+            "Choose Deployment Operation",
             ["Scale Up", "Scale Down"],
             disabled=operation_flag,
         )
 
-        # Choose the 'Number of Replicas' if you want to 'Scale Up'. default= '1'
-        # Else it will be '0' in case of 'Scale Down'
+        # Choose the 'Number of Replicas' if you want to 'Scale Up'
         if selected_operations == "Scale Up" and len(selected_deployments) > 0:
-            with st.expander("Want to Increase the Number of 'Replicas' 🤔 ?'"):
+            with st.expander("Increase the Number of Replicas"):
                 replicas = st.number_input(
                     "Enter Number of Replicas",
                     value=1,
-                    key="numeric",
+                    key="deployment_replicas",
                     min_value=1,
                     max_value=10,
                     label_visibility="visible",
@@ -258,13 +237,14 @@ def deployment_page(
             on_click=deployment_scaling,
             args=(a1, replicas, selected_namespace, selected_deployments),
             disabled=operation_flag,
+            type="primary",
         )
 
         # If 'Deployment Scaled Successfully' then return 'Success' Message else return 'Error'
         if deployment_scaling_status:
             st.success("Deployment Changes Made Successfully")
         elif deployment_scaling_status is None:
-            st.error("Issue Occurred while Scaling !!!")
+            st.error("Issue Occurred while Scaling")
 
         logger.info(
             "streamlit : K8S Control Panel : scripts : deployment_page : deployment_page : Execution End"

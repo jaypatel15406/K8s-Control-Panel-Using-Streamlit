@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Gradient Background -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="shipGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e0e0e0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="50" cy="50" r="48" fill="url(#bgGradient)"/>
+  
+  <!-- Kubernetes Ship Wheel (Simplified) -->
+  <g transform="translate(50, 50)">
+    <!-- Outer Ring -->
+    <circle cx="0" cy="0" r="25" fill="none" stroke="url(#shipGradient)" stroke-width="3"/>
+    
+    <!-- Inner Hub -->
+    <circle cx="0" cy="0" r="8" fill="url(#shipGradient)"/>
+    
+    <!-- Spokes (8 directions like K8s) -->
+    <g stroke="url(#shipGradient)" stroke-width="2.5">
+      <line x1="0" y1="-18" x2="0" y2="-8"/>
+      <line x1="0" y1="18" x2="0" y2="8"/>
+      <line x1="-18" y1="0" x2="-8" y2="0"/>
+      <line x1="18" y1="0" x2="8" y2="0"/>
+      <line x1="-12.7" y1="-12.7" x2="-5.7" y2="-5.7"/>
+      <line x1="12.7" y1="12.7" x2="5.7" y2="5.7"/>
+      <line x1="-12.7" y1="12.7" x2="-5.7" y2="5.7"/>
+      <line x1="12.7" y1="-12.7" x2="5.7" y2="-5.7"/>
+    </g>
+    
+    <!-- K8s letters in center -->
+    <text x="0" y="3" font-family="Arial, sans-serif" font-size="7" font-weight="bold" 
+          fill="#667eea" text-anchor="middle">K8s</text>
+  </g>
+  
+  <!-- Control Panel Icon (Small dashboard at bottom) -->
+  <g transform="translate(50, 75)">
+    <rect x="-12" y="-5" width="24" height="10" rx="2" fill="url(#shipGradient)" opacity="0.9"/>
+    <circle cx="-6" cy="0" r="2" fill="#667eea"/>
+    <circle cx="0" cy="0" r="2" fill="#764ba2"/>
+    <circle cx="6" cy="0" r="2" fill="#667eea"/>
+  </g>
+</svg>
