@@ -1,7 +1,5 @@
 # K8s Control Panel
 
-A Streamlit-based web interface for managing Kubernetes deployments and pods without requiring direct kubectl command usage.
-
 ## Abstract
 
 The K8s Control Panel is a Python web application that provides an intuitive graphical interface for common Kubernetes operations. Built with Streamlit and the Kubernetes Python client, it enables developers and operators to manage deployments and pods through a browser-based interface, eliminating the need for command-line kubectl operations.
