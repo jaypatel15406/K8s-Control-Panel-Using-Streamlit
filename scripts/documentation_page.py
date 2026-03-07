@@ -520,7 +520,7 @@ common Kubernetes operations.
 
 ```bash
 streamlit>=1.42.0,<2.0.0
-kubernetes>=31.0.0,<32.0.0
+kubernetes>=31.0.0,<36.0.0
 streamlit-authenticator>=0.4.0,<1.0.0
 streamlit-option-menu>=0.3.13,<1.0.0
 PyYAML>=6.0.2,<7.0.0

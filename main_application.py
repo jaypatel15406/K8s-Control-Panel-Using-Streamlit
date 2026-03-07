@@ -193,9 +193,7 @@ def render_main_interface(v1: client.CoreV1Api | None, a1: client.AppsV1Api | No
             # User profile section with emoji
             st.markdown("### 👤 User Profile")
             user_name = st.session_state.get("name", "User")
-            user_email = st.session_state.get("username", "")
             st.write(f"**Name:** {user_name}")
-            st.write(f"**Email:** {user_email}")
             st.divider()
 
             # Logout button

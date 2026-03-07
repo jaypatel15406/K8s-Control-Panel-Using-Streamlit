@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 import streamlit as st
-from kubernetes.client import AppsV1Api, CoreV1Api
+from kubernetes.client import CoreV1Api
 from PIL import Image
 from streamlit.delta_generator import DeltaGenerator
 
@@ -113,7 +113,6 @@ def choose_pod(
 
 
 def perform_pod_operation(
-    a1: AppsV1Api,
     v1: CoreV1Api,
     selected_namespace: str,
     selected_pod: list[str],
@@ -126,7 +125,6 @@ def perform_pod_operation(
     pods. Currently supports pod deletion; resource updates are under development.
 
     Args:
-        a1: Kubernetes Apps V1 API client instance (reserved for future use).
         v1: Kubernetes Core V1 API client instance for pod operations.
         selected_namespace: Kubernetes namespace containing the pods.
         selected_pod: List of pod names to operate on.
@@ -262,7 +260,6 @@ def pod_page(v1: CoreV1Api | None, a1: AppsV1Api | None, k8s_error: str = "") ->
                 "Perform Pod Operation",
                 on_click=perform_pod_operation,
                 args=(
-                    a1,
                     v1,
                     selected_namespace,
                     selected_pod,

@@ -1,11 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
     <style>
+        /* Hide Streamlit menu, footer, and deploy button */
         #MainMenu{
             visibility: hidden;
         }
         footer{
             visibility: hidden;
+        }
+        /* Hide the 'Deploy' button that appears in newer Streamlit versions */
+        [data-testid="stSidebarDeployButton"]{
+            visibility: hidden;
+        }
+        /* Hide app menu in sidebar */
+        [data-testid="stSidebarUserContent"]{
+            padding-top: 0;
         }
     </style>
 </html>

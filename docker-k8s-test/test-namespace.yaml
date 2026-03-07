@@ -1,0 +1,11 @@
+# Test Namespace for K8s Control Panel Testing
+# This namespace is automatically created when the K3s cluster starts
+# Purpose: Isolate test resources from default namespace
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: k8s-control-panel-test
+  labels:
+    name: k8s-control-panel-test
+    environment: testing

@@ -265,7 +265,51 @@ az aks get-credentials --resource-group <resource_group_name> --name <cluster_na
 
 **Note:** Replace placeholder values (`<cluster_name>`, `<region_name>`, etc.) with your actual cluster details.
 
-### Step 2: Configure Kubeconfig File
+### Step 2 (Optional): Test with Local Kubernetes Cluster
+
+For testing without a production cluster, use the included Docker-based K3s cluster. This is **highly recommended** for development and testing purposes.
+
+#### Quick Start with Docker K8s Test Environment
+
+The project includes a complete local Kubernetes testing environment using **K3s** (lightweight Kubernetes). This allows you to:
+- Test the K8s Control Panel application without connecting to a production cluster
+- Perform deployment scaling operations (scale up/down)
+- Test pod deletion operations
+- Validate application functionality in an isolated environment
+- No cloud provider account required
+- No risk to production resources
+
+```bash
+# Navigate to test environment (at project root)
+cd docker-k8s-test
+
+# Start the local K8s cluster
+docker-compose up -d
+
+# Wait for cluster to be ready (30-60 seconds)
+docker-compose logs -f k8s-cluster
+
+# Extract kubeconfig automatically (copies to config/k8sconfig.txt)
+docker-compose run kubeconfig-extractor
+```
+
+The kubeconfig is automatically configured with the correct server URL. No manual editing needed!
+
+#### 📖 Complete Documentation
+
+For detailed instructions, pre-created test resources, kubectl commands, and troubleshooting, see:
+
+**→ [Docker K8s Test Environment - Complete Guide](docker-k8s-test/README.md)**
+
+This comprehensive guide includes:
+- Quick start instructions (automated and manual)
+- Pre-configured test deployments and pods
+- Essential kubectl commands reference
+- Testing scenarios for the application
+- Troubleshooting tips
+- Resource usage information
+
+### Step 3: Configure Kubeconfig File
 
 Copy your kubeconfig file to the application:
 
@@ -276,7 +320,7 @@ cp ~/.kube/config config/k8sconfig.txt
 
 **Important:** The file must be named `k8sconfig.txt` and placed in the `config/` directory.
 
-### Step 3: Set Up User Authentication
+### Step 4: Set Up User Authentication
 
 1. **Edit `config/config.json`:**
 

@@ -1,0 +1,79 @@
+# Test Pod for K8s Control Panel Testing
+# Purpose: Provide a sample pod for testing deletion operations
+# Namespace: k8s-control-panel-test
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-nginx-pod
+  namespace: k8s-control-panel-test
+  labels:
+    app: nginx-standalone
+    environment: test
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.25-alpine
+    ports:
+    - containerPort: 80
+      name: http
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "100m"
+      limits:
+        memory: "128Mi"
+        cpu: "200m"
+    readinessProbe:
+      httpGet:
+        path: /
+        port: 80
+      initialDelaySeconds: 3
+      periodSeconds: 5
+
+---
+# Additional test pod - busybox for quick operations
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-busybox-pod
+  namespace: k8s-control-panel-test
+  labels:
+    app: busybox-standalone
+    environment: test
+spec:
+  containers:
+  - name: busybox
+    image: busybox:1.36
+    command: ["sleep", "3600"]
+    resources:
+      requests:
+        memory: "32Mi"
+        cpu: "50m"
+      limits:
+        memory: "64Mi"
+        cpu: "100m"
+
+---
+# Pod with resource requests for testing
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-resource-pod
+  namespace: k8s-control-panel-test
+  labels:
+    app: resource-test
+    environment: test
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.25-alpine
+    ports:
+    - containerPort: 80
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "250m"
+      limits:
+        memory: "256Mi"
+        cpu: "500m"

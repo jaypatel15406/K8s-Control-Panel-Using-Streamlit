@@ -1,0 +1,115 @@
+# Docker Compose for Local K8s Testing Environment
+# Purpose: Spin up a local Kubernetes cluster (K3s) to test deployment/pod operations
+#          without affecting production cluster or requiring cloud provider setup.
+
+services:
+  # Lightweight Kubernetes cluster for testing
+  k8s-cluster:
+    image: rancher/k3s:v1.29.0-k3s1
+    container_name: k8s-control-panel-test-cluster
+    hostname: k8s-cluster
+    environment:
+      - K3S_TOKEN=test-token-12345
+    ports:
+      - "6443:6443"
+    volumes:
+      - k3s-data:/var/lib/rancher/k3s
+      - ./test-namespace.yaml:/var/lib/rancher/k3s/server/manifests/test-namespace.yaml:ro
+      - ./test-deployment.yaml:/var/lib/rancher/k3s/server/manifests/test-deployment.yaml:ro
+      - ./test-pod.yaml:/var/lib/rancher/k3s/server/manifests/test-pod.yaml:ro
+    tmpfs:
+      - /run
+      - /var/run
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    privileged: true
+    restart: unless-stopped
+    command: server --disable traefik
+
+  # Helper service to extract and configure kubeconfig
+  kubeconfig-extractor:
+    image: alpine:latest
+    container_name: k8s-kubeconfig-extractor
+    depends_on:
+      k8s-cluster:
+        condition: service_started
+    volumes:
+      - k3s-data:/k3s-data:ro
+      - ../config:/output
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - |
+        set -e
+        echo "Waiting for kubeconfig to be ready..."
+        
+        # Wait for k3s to generate the kubeconfig and certificates
+        for i in $$(seq 1 60); do
+          if [ -f /k3s-data/server/tls/server-ca.crt ] && [ -f /k3s-data/server/tls/client-admin.crt ] && [ -f /k3s-data/server/tls/client-admin.key ]; then
+            echo "Certificates found!"
+            break
+          fi
+          if [ $$i -le 10 ]; then
+            echo "   Waiting... ($$i/60)"
+          fi
+          sleep 2
+        done
+        
+        # Verify all required files exist
+        if [ ! -f /k3s-data/server/tls/server-ca.crt ]; then
+          echo "ERROR: server-ca.crt not found"
+          exit 1
+        fi
+        
+        if [ ! -f /k3s-data/server/tls/client-admin.crt ]; then
+          echo "ERROR: client-admin.crt not found"
+          exit 1
+        fi
+        
+        if [ ! -f /k3s-data/server/tls/client-admin.key ]; then
+          echo "ERROR: client-admin.key not found"
+          exit 1
+        fi
+        
+        echo "Extracting certificates..."
+        
+        # Encode certificates in base64 (single line, no wrapping)
+        CA_CRT_B64=$$(base64 /k3s-data/server/tls/server-ca.crt | tr -d '\n')
+        CLIENT_CRT_B64=$$(base64 /k3s-data/server/tls/client-admin.crt | tr -d '\n')
+        CLIENT_KEY_B64=$$(base64 /k3s-data/server/tls/client-admin.key | tr -d '\n')
+        
+        echo "Generating kubeconfig with embedded certificates..."
+        
+        # Create kubeconfig with inline certificate data using printf
+        printf 'apiVersion: v1\nkind: Config\nclusters:\n- name: k3s-default\n  cluster:\n    certificate-authority-data: %s\n    server: https://localhost:6443\nusers:\n- name: admin\n  user:\n    client-certificate-data: %s\n    client-key-data: %s\ncontexts:\n- name: k3s-default\n  context:\n    cluster: k3s-default\n    user: admin\ncurrent-context: k3s-default\npreferences: {}\n' "$$CA_CRT_B64" "$$CLIENT_CRT_B64" "$$CLIENT_KEY_B64" > /output/k8sconfig.txt
+        
+        # Validate the generated kubeconfig
+        if [ ! -s /output/k8sconfig.txt ]; then
+          echo "ERROR: Generated kubeconfig is empty"
+          exit 1
+        fi
+        
+        echo ""
+        echo "SUCCESS: Kubeconfig extracted to config/k8sconfig.txt"
+        echo "SUCCESS: Server URL set to https://localhost:6443"
+        echo "SUCCESS: Certificates embedded inline (no file dependencies)"
+        echo ""
+        echo "Kubeconfig size: $$(wc -c < /output/k8sconfig.txt) bytes"
+        echo ""
+        echo "You can now run the application:"
+        echo "   python -m streamlit run main_application.py"
+        echo ""
+        echo "Test with kubectl:"
+        echo "   kubectl --kubeconfig=../config/k8sconfig.txt get namespaces"
+    restart: "no"
+
+volumes:
+  k3s-data:
+    driver: local
+
+networks:
+  default:
+    name: k8s-control-panel-test-network
