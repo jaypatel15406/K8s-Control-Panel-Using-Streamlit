@@ -1,4 +1,6 @@
-# K8s Control Panel
+# K8s Control Panel :hammer_and_wrench:
+
+> **Fun Fact:** The name "Kubernetes" originated from the Greek word "κυβερνήτης", meaning “helmsman” or “pilot.” Just like a ship’s captain, Kubernetes orchestrates containers, steering the deployment, scaling, and management of applications across distributed infrastructure.
 
 ## Abstract
 
