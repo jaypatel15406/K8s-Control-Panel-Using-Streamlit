@@ -1,9 +1,6 @@
 {
     "decrypted_password_jay_user": "jay.patel",
     "password_hashing_flag": "False",
-    "coming_soon_image_configurations": {
-        "width": 520
-    },
     "logging_configurations": {
         "level": "INFO",
         "file": "logs/app.log",

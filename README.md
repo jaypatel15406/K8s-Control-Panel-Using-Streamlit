@@ -16,6 +16,18 @@ Key capabilities include:
 
 ---
 
+## 🎥 Video Demo
+
+Watch a quick demo of the K8s Control Panel in action (click below for full video 👇):
+
+<div style="text-align: center; margin: 20px 0;">
+    <a href="https://www.loom.com/share/c00d110253434a2088b4f33dd7402e9d">
+        <img style="max-width:500px; width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" src="https://cdn.loom.com/sessions/thumbnails/c00d110253434a2088b4f33dd7402e9d-4e377b0457e03249-full-play.gif#t=0.1">
+    </a>
+</div>
+
+---
+
 ## Project Architecture
 
 ### System Architecture Diagram
@@ -95,7 +107,6 @@ flowchart TD
     R -->|Scale Up| T[Set Replica Count]
     R -->|Scale Down| U[Set Replicas to 0]
     S -->|Delete| V[Delete Pod]
-    S -->|Update Resources| W[Coming Soon]
     T --> X[Execute Operation]
     U --> X
     V --> X
@@ -265,19 +276,24 @@ az aks get-credentials --resource-group <resource_group_name> --name <cluster_na
 
 **Note:** Replace placeholder values (`<cluster_name>`, `<region_name>`, etc.) with your actual cluster details.
 
-### Step 2 (Optional): Test with Local Kubernetes Cluster
+---
 
-For testing without a production cluster, use the included Docker-based K3s cluster. This is **highly recommended** for development and testing purposes.
+### 🐳 Step 2 (Optional): Test with Local Kubernetes Cluster
 
-#### Quick Start with Docker K8s Test Environment
+**Don't have a Kubernetes cluster?** No problem! Use the included Docker-based K3s cluster for safe testing without connecting to a production cluster. This is **highly recommended** for development and testing.
 
-The project includes a complete local Kubernetes testing environment using **K3s** (lightweight Kubernetes). This allows you to:
-- Test the K8s Control Panel application without connecting to a production cluster
-- Perform deployment scaling operations (scale up/down)
-- Test pod deletion operations
-- Validate application functionality in an isolated environment
-- No cloud provider account required
-- No risk to production resources
+#### Why Use the Docker K8s Test Environment?
+
+| Benefit | Description |
+|---------|-------------|
+| 🚀 **Quick Setup** | Start a local K8s cluster in under 2 minutes |
+| 🔒 **Safe Testing** | No risk to production resources |
+| 💰 **No Cloud Account Needed** | Test without AWS, GCP, or Azure |
+| 📦 **Pre-configured Resources** | Test deployments and pods included |
+| 🎯 **Isolated Environment** | Docker-based K3s cluster |
+| 🧪 **Perfect for Development** | Test features before production deployment |
+
+#### Quick Start
 
 ```bash
 # Navigate to test environment (at project root)
@@ -293,21 +309,78 @@ docker-compose logs -f k8s-cluster
 docker-compose run kubeconfig-extractor
 ```
 
-The kubeconfig is automatically configured with the correct server URL. No manual editing needed!
+The kubeconfig is automatically:
+- ✅ Extracted from the cluster
+- ✅ Copied to `config/k8sconfig.txt`
+- ✅ Server URL set to `https://localhost:6443`
+- ✅ Certificates embedded inline (no file dependencies)
+
+#### Pre-Created Test Resources
+
+The test environment includes ready-to-use resources:
+
+**Namespace:**
+- `k8s-control-panel-test` - Isolated test namespace
+
+**Deployments:**
+
+| Name | Initial Replicas | Image | Description |
+|------|-----------------|-------|-------------|
+| `test-nginx-deployment` | 2 | nginx:1.25-alpine | Web server for scaling tests |
+| `test-busybox-deployment` | 1 | busybox:1.36 | Lightweight container for testing |
+
+**Pods (Standalone):**
+
+| Name | Image | Purpose |
+|------|-------|---------|
+| `test-nginx-pod` | nginx:1.25-alpine | Test pod deletion |
+| `test-busybox-pod` | busybox:1.36 | Test pod deletion |
+
+#### Testing the Application
+
+1. **Start the Application:**
+   ```bash
+   python -m streamlit run main_application.py
+   ```
+
+2. **Test Deployment Operations:**
+   - Select **"Deployment Operations"** tab
+   - Choose namespace: `k8s-control-panel-test`
+   - Select deployments and perform scaling
+
+3. **Test Pod Operations:**
+   - Select **"Pod Operations"** tab
+   - Choose namespace: `k8s-control-panel-test`
+   - Select pods and delete them
+
+#### Essential kubectl Commands
+
+```bash
+# List all namespaces
+kubectl --kubeconfig=../config/k8sconfig.txt get namespaces
+
+# List pods in test namespace
+kubectl --kubeconfig=../config/k8sconfig.txt get pods -n k8s-control-panel-test
+
+# Scale deployment
+kubectl --kubeconfig=../config/k8sconfig.txt scale deployment test-nginx-deployment --replicas=5 -n k8s-control-panel-test
+```
+
+#### Resource Usage
+
+| Resource | Approximate Usage |
+|----------|------------------|
+| CPU | 500MB - 1GB |
+| Memory | 1GB - 2GB |
+| Disk | 500MB |
 
 #### 📖 Complete Documentation
 
-For detailed instructions, pre-created test resources, kubectl commands, and troubleshooting, see:
+For detailed instructions, all kubectl commands, troubleshooting, and advanced usage, see:
 
 **→ [Docker K8s Test Environment - Complete Guide](docker-k8s-test/README.md)**
 
-This comprehensive guide includes:
-- Quick start instructions (automated and manual)
-- Pre-configured test deployments and pods
-- Essential kubectl commands reference
-- Testing scenarios for the application
-- Troubleshooting tips
-- Resource usage information
+---
 
 ### Step 3: Configure Kubeconfig File
 
@@ -383,7 +456,6 @@ cp ~/.kube/config config/k8sconfig.txt
 |---------|---------|-------------|
 | `decrypted_password_jay_user` | - | Plain text password for initial hashing |
 | `password_hashing_flag` | "False" | Enable to generate new password hash |
-| `coming_soon_image_configurations.width` | 520 | "Coming Soon" image width (pixels) |
 | `logging_configurations.level` | "INFO" | Log level (DEBUG/INFO/WARNING/ERROR) |
 | `logging_configurations.file` | "logs/app.log" | Log file path |
 | `logging_configurations.max_bytes` | 5242880 | Max log file size before rotation (5MB) |
@@ -440,7 +512,7 @@ The application will open in your default web browser at `http://localhost:8501`
 5. **Pod Operations:**
    - Choose namespace (or see info message if not configured)
    - Select pod(s)
-   - Choose operation (Delete Pod / Update Resources)
+   - Choose operation: **Delete Pod**
    - Execute operation
 
 **Note:** The application gracefully handles missing Kubernetes configuration by showing informative messages while keeping the UI functional.
@@ -461,7 +533,6 @@ The application will open in your default web browser at `http://localhost:8501`
 | Operation | Description | Use Case |
 |-----------|-------------|----------|
 | Delete Pod | Remove selected pod(s) | Restart failed pods, cleanup |
-| Update Memory and CPU | Configure resource limits | Coming soon |
 
 ### Security Features
 
@@ -471,33 +542,6 @@ The application will open in your default web browser at `http://localhost:8501`
 - Namespace-scoped operations (prevents accidental cluster-wide changes)
 
 ---
-
-## Application Screenshots
-
-### 1. Deployment Scaling - Scale Up
-
-![Deployment Scaling Up](media/Deployment_Scaling_Up_Image.PNG)
-
-*Scale up deployments by increasing replica count to handle increased load.*
-
----
-
-### 2. Deployment Scaling - Scale Down
-
-![Deployment Scaling Down](media/Deployment_Scaling_Down_Image.PNG)
-
-*Scale down deployments to zero replicas to save resources during low traffic.*
-
----
-
-### 3. Pod Deletion Operation
-
-![Pod Deletion](media/Pod_Deletion_Operation_Image.PNG)
-
-*Delete pods that are failed or need to be restarted.*
-
----
-
 
 ## Troubleshooting
 

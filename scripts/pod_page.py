@@ -2,29 +2,25 @@
 Pod Operations Page Module for K8s Control Panel.
 
 This module provides the user interface and backend logic for managing Kubernetes
-pods through the Streamlit web interface. It enables users to perform pod operations
-such as deletion and resource updates without using kubectl commands.
+pods through the Streamlit web interface. It enables users to delete pods
+without using kubectl commands.
 
 Features:
     - Namespace selection for pod targeting
     - Multi-pod selection within a namespace
     - Pod deletion operations
-    - Resource update operations (memory and CPU - coming soon)
     - Real-time operation status feedback
     - Comprehensive error handling and logging
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import traceback
-from pathlib import Path
 from typing import Any
 
 import streamlit as st
 from kubernetes.client import CoreV1Api
-from PIL import Image
 from streamlit.delta_generator import DeltaGenerator
 
 # Import External Packages
@@ -36,16 +32,6 @@ common_obj = CommonComponent()
 # Initialization of all the Important Variables
 config_path = "./config"
 app_config_path = f"{config_path}/config.json"
-
-# Unpack all the important variables from 'app_config_path' file
-coming_soon_image_width: int = 520  # Default value
-if Path(app_config_path).exists():
-    with open(app_config_path, "r", encoding="utf-8") as app_conf_file:
-        app_conf_json_str = app_conf_file.read()
-        app_config_dict: dict[str, Any] = json.loads(app_conf_json_str)
-        coming_soon_image_width = app_config_dict.get(
-            "coming_soon_image_configurations", {}
-        ).get("width", 520)
 
 
 def choose_pod(
@@ -121,8 +107,8 @@ def perform_pod_operation(
 ) -> bool | None:
     """Execute pod operations on selected Kubernetes pods.
 
-    Performs the specified operation (delete, update resources) on selected
-    pods. Currently supports pod deletion; resource updates are under development.
+    Performs the specified operation on selected pods.
+    Currently supports pod deletion.
 
     Args:
         v1: Kubernetes Core V1 API client instance for pod operations.
@@ -130,7 +116,6 @@ def perform_pod_operation(
         selected_pod: List of pod names to operate on.
         selected_pod_operations: Operation type to perform. Valid values:
                                 - 'Delete Pod': Delete the selected pod(s)
-                                - 'Update Memory and CPU': Update resources (coming soon)
         pod_operation_status: Initial status flag. Defaults to False.
 
     Returns:
@@ -219,61 +204,33 @@ def pod_page(v1: CoreV1Api | None, a1: AppsV1Api | None, k8s_error: str = "") ->
         # Enable/Disable the Dropdown option based on 'selected_pod'
         operation_flag = True if len(selected_pod) == 0 else False
 
-        # Choose Operation based on the 'Number of Pods' Selected
-        operation_lst = (
-            ["Delete Pod", "Update Memory and CPU"]
-            if len(selected_pod) == 1
-            else ["Delete Pod"]
-        )
-
-        # Choose Operations
+        # Choose Operation - Only Delete Pod is available
         selected_pod_operations = operation_col.selectbox(
-            "Choose Pod Operation", operation_lst, disabled=operation_flag
+            "Choose Pod Operation", ["Delete Pod"], disabled=operation_flag
         )
 
         # Made Column Partition to make a button at center location
         _, _, button_col_partition_1, _, _ = st.columns(5)
 
-        # 'Coming Soon ...' Redirection for Update Memory and CPU feature
-        if selected_pod_operations == "Update Memory and CPU":
-            logger.info(
-                "streamlit : K8S Control Panel : scripts : pod_page : pod_page : Inside Update Memory and CPU Section ..."
-            )
-            # Open 'Coming Soon' Image
-            image_path = "media/Coming_Soon_Image.png"
-            if Path(image_path).exists():
-                image = Image.open(image_path)
+        # Perform Pod Operation based on the Selection
+        pod_operation_status = button_col_partition_1.button(
+            "Perform Pod Operation",
+            on_click=perform_pod_operation,
+            args=(
+                v1,
+                selected_namespace,
+                selected_pod,
+                selected_pod_operations,
+            ),
+            disabled=operation_flag,
+            type="primary",
+        )
 
-                # Assign 'Center' column to the above uploaded image
-                _, center_col, _ = st.columns(3)
-                center_col.image(
-                    image,
-                    caption="Hold on tight, I am working on this",
-                    width=coming_soon_image_width,
-                )
-            else:
-                st.info("Feature under development - Coming Soon")
-
-        else:
-            # Perform Pod Operation based on the Selection
-            pod_operation_status = button_col_partition_1.button(
-                "Perform Pod Operation",
-                on_click=perform_pod_operation,
-                args=(
-                    v1,
-                    selected_namespace,
-                    selected_pod,
-                    selected_pod_operations,
-                ),
-                disabled=operation_flag,
-                type="primary",
-            )
-
-            # If 'Pod Operated Successfully' then return 'Success' Message else return 'Error'
-            if pod_operation_status:
-                st.success("Pod Changes Made Successfully")
-            elif pod_operation_status is None:
-                st.error("Issue Occurred while Operating Pod")
+        # If 'Pod Operated Successfully' then return 'Success' Message else return 'Error'
+        if pod_operation_status:
+            st.success("Pod Changes Made Successfully")
+        elif pod_operation_status is None:
+            st.error("Issue Occurred while Operating Pod")
 
         logger.info("streamlit : K8S Control Panel : scripts : pod_page : Execution End")
 

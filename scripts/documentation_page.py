@@ -19,6 +19,164 @@ from __future__ import annotations
 import streamlit as st
 
 
+def render_docker_k8s_test_section() -> None:
+    """Render Docker K8s Test Environment section.
+
+    Provides comprehensive information about the local Kubernetes testing
+    environment using K3s, including setup instructions and benefits.
+    """
+    st.markdown("### 🐳 Docker K8s Test Environment")
+
+    st.info("""
+    **Don't have a Kubernetes cluster?** No problem!
+
+    This project includes a **local Kubernetes testing environment** using K3s (lightweight Kubernetes)
+    for testing the K8s Control Panel application without connecting to a production cluster.
+    """)
+
+    st.markdown("""
+#### Why Use the Docker K8s Test Environment?
+
+| Benefit | Description |
+|---------|-------------|
+| 🚀 **Quick Setup** | Start a local K8s cluster in under 2 minutes |
+| 🔒 **Safe Testing** | No risk to production resources |
+| 💰 **No Cloud Account Needed** | Test without AWS, GCP, or Azure |
+| 📦 **Pre-configured Resources** | Test deployments and pods included |
+| 🎯 **Isolated Environment** | Docker-based K3s cluster |
+| 🧪 **Perfect for Development** | Test features before production deployment |
+
+#### What's Included?
+
+The `docker-k8s-test` directory contains:
+
+| File | Description |
+|------|-------------|
+| `docker-compose.yml` | Orchestrates K3s cluster with auto kubeconfig setup |
+| `test-namespace.yaml` | Creates isolated test namespace |
+| `test-deployment.yaml` | Sample deployments for scaling tests |
+| `test-pod.yaml` | Sample pods for deletion tests |
+
+#### Quick Start
+
+```bash
+# Navigate to test environment
+cd docker-k8s-test
+
+# Start the K8s cluster
+docker-compose up -d
+
+# Wait for cluster to be ready (30-60 seconds)
+docker-compose logs -f k8s-cluster
+
+# Extract kubeconfig automatically
+docker-compose run kubeconfig-extractor
+```
+
+The kubeconfig is automatically:
+- ✅ Extracted from the cluster
+- ✅ Copied to `config/k8sconfig.txt`
+- ✅ Server URL set to `https://localhost:6443`
+- ✅ Certificates embedded inline (no file dependencies)
+
+#### Pre-Created Test Resources
+
+The test environment includes pre-configured resources for testing:
+
+**Namespace:**
+- `k8s-control-panel-test` - Isolated test namespace
+
+**Deployments:**
+
+| Name | Initial Replicas | Image | Description |
+|------|-----------------|-------|-------------|
+| `test-nginx-deployment` | 2 | nginx:1.25-alpine | Web server for scaling tests |
+| `test-busybox-deployment` | 1 | busybox:1.36 | Lightweight container for testing |
+
+**Pods (Standalone):**
+
+| Name | Image | Purpose |
+|------|-------|---------|
+| `test-nginx-pod` | nginx:1.25-alpine | Test pod deletion |
+| `test-busybox-pod` | busybox:1.36 | Test pod deletion |
+| `test-resource-pod` | nginx:1.25-alpine | Test with resource limits |
+
+#### Testing the Application
+
+Once the cluster is running:
+
+1. **Start the Application:**
+   ```bash
+   python -m streamlit run main_application.py
+   ```
+
+2. **Test Deployment Operations:**
+   - Select **"Deployment Operations"** tab
+   - Choose namespace: `k8s-control-panel-test`
+   - Select deployments: `test-nginx-deployment`, `test-busybox-deployment`
+   - Choose operation: **Scale Up** or **Scale Down**
+
+3. **Test Pod Operations:**
+   - Select **"Pod Operations"** tab
+   - Choose namespace: `k8s-control-panel-test`
+   - Select pod: `test-nginx-pod`, `test-busybox-pod`
+   - Choose operation: **Delete Pod**
+
+#### Essential kubectl Commands
+
+```bash
+# List all namespaces
+kubectl --kubeconfig=../config/k8sconfig.txt get namespaces
+
+# List pods in test namespace
+kubectl --kubeconfig=../config/k8sconfig.txt get pods -n k8s-control-panel-test
+
+# List deployments
+kubectl --kubeconfig=../config/k8sconfig.txt get deployments -n k8s-control-panel-test
+
+# Scale deployment
+kubectl --kubeconfig=../config/k8sconfig.txt scale deployment test-nginx-deployment --replicas=5 -n k8s-control-panel-test
+
+# Delete pod
+kubectl --kubeconfig=../config/k8sconfig.txt delete pod test-nginx-pod -n k8s-control-panel-test
+```
+
+#### Stopping the Test Environment
+
+```bash
+# Stop the cluster
+docker-compose down
+
+# Stop and remove all data
+docker-compose down -v
+```
+
+#### 📖 Complete Documentation
+
+For detailed instructions, troubleshooting, and advanced kubectl commands, see:
+
+**→ [Docker K8s Test Environment - Complete Guide](https://github.com/jaypatel15406/K8s-Control-Panel-Using-Streamlit/blob/main/docker-k8s-test/README.md)**
+
+This comprehensive guide includes:
+- Detailed setup instructions (automated and manual)
+- Complete kubectl command reference
+- Testing scenarios for the application
+- Troubleshooting tips and common issues
+- Resource usage information
+- Learning resources and references
+
+#### Resource Usage
+
+| Resource | Approximate Usage |
+|----------|------------------|
+| CPU | 500MB - 1GB |
+| Memory | 1GB - 2GB |
+| Disk | 500MB |
+
+> **Note:** This is for testing only. Do not use for production workloads.
+    """)
+
+
 def render_cloud_provider_section() -> None:
     """Render cloud provider configuration in side-by-side columns.
 
@@ -257,17 +415,15 @@ def render_architecture_section() -> None:
     Displays a text-based architecture diagram that is properly centered
     and formatted for readability.
     """
-    st.markdown("### Architecture")
-    
-    # Center the architecture title and diagram using columns
+    # Center the architecture diagram using columns
     _, center_col, _ = st.columns([0.25, 0.5, 0.25])
     with center_col:
         st.markdown("""
         <div style='text-align: center; margin: 20px 0;'>
-            <h4 style='color: #4a5568; margin-bottom: 15px;'>System Architecture Overview</h4>
+            <h3 style='color: #4a5568; margin-bottom: 15px;'>System Architecture</h3>
         </div>
         """, unsafe_allow_html=True)
-    
+
     st.markdown("""
 The K8s Control Panel follows a layered architecture:
 
@@ -280,28 +436,28 @@ The K8s Control Panel follows a layered architecture:
                     ▼
 ┌─────────────────────────────────────────────────┐
 │           Application Layer                     │
-│  ┌──────────┬──────────────┬──────────────┐    │
-│  │Authentication│   UI     │  Navigation  │    │
-│  │   Module   │ Components │    System    │    │
-│  └──────────┴──────────────┴──────────────┘    │
+│  ┌──────────┬──────────────┬──────────────┐     │
+│  │Authentication│   UI     │  Navigation  │     │
+│  │   Module   │ Components │    System    │     │
+│  └──────────┴──────────────┴──────────────┘     │
 └───────────────────┬─────────────────────────────┘
                     │
                     ▼
 ┌─────────────────────────────────────────────────┐
 │         Business Logic Layer                    │
-│  ┌──────────────────┬──────────────────────┐   │
-│  │  Deployment      │     Pod Operations   │   │
-│  │  Operations      │                      │   │
-│  └──────────────────┴──────────────────────┘   │
+│  ┌──────────────────┬──────────────────────┐    │
+│  │  Deployment      │     Pod Operations   │    │
+│  │  Operations      │                      │    │
+│  └──────────────────┴──────────────────────┘    │
 └───────────────────┬─────────────────────────────┘
                     │
                     ▼
 ┌─────────────────────────────────────────────────┐
 │         Infrastructure Layer                    │
-│  ┌──────────────────┬──────────────────────┐   │
-│  │  Kubernetes      │   Kubernetes Cluster │   │
-│  │  Python Client   │   (Your Cluster)     │   │
-│  └──────────────────┴──────────────────────┘   │
+│  ┌──────────────────┬──────────────────────┐    │
+│  │  Kubernetes      │   Kubernetes Cluster │    │
+│  │  Python Client   │   (Your Cluster)     │    │
+│  └──────────────────┴──────────────────────┘    │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -314,7 +470,7 @@ The K8s Control Panel follows a layered architecture:
 5. **Kubernetes Client** communicates with your cluster
 6. **Cluster** executes the requested operations
 
-> **Note:** For visual architecture diagrams, please refer to the 
+> **Note:** For visual architecture diagrams, please refer to the
 > [README.md](https://github.com/jaypatel15406/K8s-Control-Panel-Using-Streamlit/blob/main/README.md)
 > file in the repository.
     """)
@@ -464,6 +620,7 @@ def render_documentation_page() -> None:
     - Application overview
     - Architecture information
     - Cloud provider configuration (side-by-side)
+    - Docker K8s Test Environment (local K3s cluster)
     - OS-specific installation guides
     - Security guidelines
     - Troubleshooting tips
@@ -497,6 +654,26 @@ common Kubernetes operations.
 
     st.divider()
 
+    # Table of Contents
+    st.markdown("### 📑 Table of Contents")
+
+    st.markdown("""
+**Quick Navigation:**
+
+1. [Architecture](#architecture)
+2. [Prerequisites](#prerequisites)
+3. [Installation](#installation)
+4. [Cloud Provider Configuration](#cloud-provider-configuration)
+5. [Docker K8s Test Environment](#-docker-k8s-test-environment)
+6. [User Authentication Setup](#user-authentication-setup)
+7. [Security Best Practices](#security-best-practices)
+8. [Troubleshooting](#troubleshooting)
+
+> 💡 **Tip:** Use the navigation links above to jump to specific sections.
+    """)
+
+    st.divider()
+
     # Architecture Section
     render_architecture_section()
 
@@ -516,16 +693,7 @@ common Kubernetes operations.
 | kubectl | 1.28+ | For kubeconfig generation |
 | Git | 2.30+ | For cloning the repository |
 
-**Required Python Packages:**
-
-```bash
-streamlit>=1.42.0,<2.0.0
-kubernetes>=31.0.0,<36.0.0
-streamlit-authenticator>=0.4.0,<1.0.0
-streamlit-option-menu>=0.3.13,<1.0.0
-PyYAML>=6.0.2,<7.0.0
-Pillow>=11.0.0,<12.0.0
-```
+> **Note:** All Python dependencies are listed in `requirements.txt` and will be installed automatically.
     """)
 
     st.divider()
@@ -533,26 +701,25 @@ Pillow>=11.0.0,<12.0.0
     # Installation Section
     st.markdown("### Installation")
 
-    st.markdown("""
-**Quick Start:**
+    st.info("""
+    **Quick Start:**
+    ```bash
+    # Clone the repository
+    git clone https://github.com/jaypatel15406/K8s-Control-Panel-Using-Streamlit.git
+    cd K8s-Control-Panel-Using-Streamlit
 
-```bash
-# Clone the repository
-git clone https://github.com/jaypatel15406/K8s-Control-Panel-Using-Streamlit.git
-cd K8s-Control-Panel-Using-Streamlit
+    # Create virtual environment
+    python3 -m venv venv
+    source venv/bin/activate  # macOS/Linux
+    # OR
+    venv\\Scripts\\activate     # Windows
 
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # macOS/Linux
-# OR
-venv\\Scripts\\activate     # Windows
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-For OS-specific instructions, see the tabs below.
+    # Install dependencies
+    pip install -r requirements.txt
+    ```
     """)
+
+    st.markdown("For OS-specific instructions, see the tabs below:")
 
     # OS-specific installation tabs
     render_os_installation_tabs()
@@ -561,6 +728,11 @@ For OS-specific instructions, see the tabs below.
 
     # Cloud Configuration Section
     render_cloud_provider_section()
+
+    st.divider()
+
+    # Docker K8s Test Environment Section
+    render_docker_k8s_test_section()
 
     st.divider()
 
